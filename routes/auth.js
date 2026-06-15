@@ -31,11 +31,51 @@ async function authRoutes(fastify) {
     preHandler: verifyToken
   },
   async (request) => {
+    const { userId } = request.user
+
+    const result = await pool.query(
+      'SELECT id, name, email, address, gender FROM users WHERE id = $1',
+      [userId],
+    )
+
+    const user = result.rows[0]
+
     return {
-      userId: request.user.userId
+      userId: user.id,
+      name: user.name,
+      email: user.email,
+      address: user.address,
+      gender: user.gender,
     }
   }
 )
+
+  fastify.put(
+    '/me',
+    { preHandler: verifyToken },
+    async (request) => {
+      const { userId } = request.user
+      const { name, email, address, gender } = request.body
+
+      const result = await pool.query(
+        `UPDATE users
+         SET name = $1, email = $2, address = $3, gender = $4
+         WHERE id = $5
+         RETURNING id, name, email, address, gender`,
+        [name, email, address, gender, userId],
+      )
+
+      const user = result.rows[0]
+
+      return {
+        userId: user.id,
+        name: user.name,
+        email: user.email,
+        address: user.address,
+        gender: user.gender,
+      }
+    },
+  )
 
   fastify.post('/login', async (request, reply) => {
     const { email, password } = request.body

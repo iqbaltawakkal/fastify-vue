@@ -6,6 +6,8 @@ export interface User {
   id: number
   name: string
   email: string
+  address: string | null
+  gender: string | null
   role: 'admin' | 'user'
   avatar: string
 }
@@ -16,35 +18,58 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthenticated = computed(() => !!token.value)
 
+  function avatarUrl(name: string) {
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=6366f1&color=fff`
+  }
+
   async function login(email: string, password: string): Promise<void> {
-    return axios
-      .post('/login', { email, password })
-      .then((response) => {
-        const { token: jwtToken } = response.data
+    const response = await axios.post('/login', { email, password })
+    const { token: jwtToken } = response.data
 
-        const loggedInUser: User = {
-          id: 1,
-          name: email
-            .split('@')[0]
-            .replace(/[._]/g, ' ')
-            .replace(/\b\w/g, (c) => c.toUpperCase()),
-          email,
-          role: 'admin',
-          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(email)}&background=6366f1&color=fff`,
-        }
+    token.value = jwtToken
+    localStorage.setItem('auth_token', jwtToken)
 
-        user.value = loggedInUser
-        token.value = jwtToken
+    await fetchMe()
+  }
 
-        localStorage.setItem('auth_token', jwtToken)
-      })
+  async function fetchMe(): Promise<void> {
+    const response = await axios.get('/me')
+    const data = response.data
+    user.value = {
+      id: data.userId,
+      name: data.name ?? '',
+      email: data.email,
+      address: data.address ?? null,
+      gender: data.gender ?? null,
+      role: 'admin',
+      avatar: avatarUrl(data.name ?? data.email),
+    }
+  }
+
+  async function updateProfile(payload: {
+    name: string
+    email: string
+    address: string
+    gender: string
+  }): Promise<void> {
+    const response = await axios.put('/me', payload)
+    const data = response.data
+    if (user.value) {
+      user.value = {
+        ...user.value,
+        name: data.name ?? '',
+        email: data.email,
+        address: data.address ?? null,
+        gender: data.gender ?? null,
+        avatar: avatarUrl(data.name ?? data.email),
+      }
+    }
   }
 
   async function register(name: string, email: string, _password: string): Promise<{ data: any }> {
-    return axios
-      .post('/register', { email, password: _password }).catch((error) => {
-        throw new Error(error.response?.data?.message || 'Registration failed')
-      })
+    return axios.post('/register', { email, password: _password }).catch((error) => {
+      throw new Error(error.response?.data?.message || 'Registration failed')
+    })
   }
 
   function logout() {
@@ -53,17 +78,20 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('auth_token')
   }
 
-  function restoreSession() {
+  async function restoreSession() {
     if (token.value && !user.value) {
-      user.value = {
-        id: 1,
-        name: 'Demo User',
-        email: 'demo@example.com',
-        role: 'admin',
-        avatar: 'https://ui-avatars.com/api/?name=Demo+User&background=6366f1&color=fff',
-      }
+      await fetchMe().catch(() => logout())
     }
   }
 
-  return { user, token, isAuthenticated, login, register, logout, restoreSession }
+  return {
+    user,
+    token,
+    isAuthenticated,
+    login,
+    register,
+    logout,
+    restoreSession,
+    updateProfile,
+  }
 })
