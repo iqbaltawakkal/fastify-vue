@@ -1,5 +1,7 @@
 const jwt = require('jsonwebtoken')
 
+const JWT_SECRET = 'super-secret-key'
+
 function verifyToken(request, reply, done) {
   const authHeader =
     request.headers.authorization

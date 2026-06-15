@@ -1,11 +1,12 @@
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const pool = require('../db')
+const verifyToken = require('../middleware/verifyToken')
 
 const JWT_SECRET = 'super-secret-key'
 
 async function authRoutes(fastify) {
-  fastify.post('/register', async (request, reply) => {
+  fastify.post('/register', async (request, _reply) => {
     const { email, password } = request.body
 
     console.log(email, password)
