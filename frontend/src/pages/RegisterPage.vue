@@ -26,8 +26,13 @@ async function submit() {
   }
   loading.value = true
   try {
-    await auth.register(name.value, email.value, password.value)
-    router.push('/dashboard')
+    const {data} = await auth.register(name.value, email.value, password.value)
+    if(data.success) {
+      await auth.login(email.value, password.value)
+      router.push('/dashboard')
+    } else {
+      error.value = data.message || 'Registration failed'
+    }
   } catch (e: any) {
     error.value = e.message
   } finally {
