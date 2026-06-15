@@ -31,5 +31,9 @@ export default [
     },
   },
   prettier,
+  {
+    languageOptions: {
+    },
+  },
   { ignores: ['dist/', 'node_modules/'] },
 ]
