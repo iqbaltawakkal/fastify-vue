@@ -24,6 +24,18 @@ async function authRoutes(fastify) {
     return { success: true }
   })
 
+  fastify.get(
+  '/me',
+  {
+    preHandler: verifyToken
+  },
+  async (request) => {
+    return {
+      userId: request.user.userId
+    }
+  }
+)
+
   fastify.post('/login', async (request, reply) => {
     const { email, password } = request.body
 
