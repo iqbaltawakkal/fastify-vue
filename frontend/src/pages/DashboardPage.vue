@@ -1,7 +1,37 @@
 <script setup lang="ts">
 import { useAuthStore } from '@/stores/auth'
+import axios from 'axios'
+import { onMounted, ref } from 'vue'
+
+interface Person {
+  id: number
+  name: string
+  email: string
+  address: string | null
+  gender: string | null
+  status: string
+}
 
 const auth = useAuthStore()
+
+const people = ref<Person[]>([])
+const loading = ref(false)
+
+async function fetchPeople() {
+  loading.value = true
+  try {
+    const res = await axios.get('/peoples')
+    people.value = res.data
+  } finally {
+    loading.value = false
+  }
+}
+
+function avatarUrl(name: string) {
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name || '?')}&background=6366f1&color=fff`
+}
+
+onMounted(fetchPeople)
 
 const stats = [
   {
@@ -32,14 +62,6 @@ const stats = [
     up: true,
     icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6',
   },
-]
-
-const recent = [
-  { name: 'Alice Johnson', email: 'alice@example.com', status: 'Active', joined: 'Jun 12, 2026', avatar: 'https://ui-avatars.com/api/?name=Alice+Johnson&background=6366f1&color=fff' },
-  { name: 'Bob Martinez', email: 'bob@example.com', status: 'Active', joined: 'Jun 11, 2026', avatar: 'https://ui-avatars.com/api/?name=Bob+Martinez&background=10b981&color=fff' },
-  { name: 'Carol White', email: 'carol@example.com', status: 'Inactive', joined: 'Jun 9, 2026', avatar: 'https://ui-avatars.com/api/?name=Carol+White&background=f59e0b&color=fff' },
-  { name: 'David Kim', email: 'david@example.com', status: 'Active', joined: 'Jun 7, 2026', avatar: 'https://ui-avatars.com/api/?name=David+Kim&background=3b82f6&color=fff' },
-  { name: 'Eva Chen', email: 'eva@example.com', status: 'Pending', joined: 'Jun 5, 2026', avatar: 'https://ui-avatars.com/api/?name=Eva+Chen&background=ec4899&color=fff' },
 ]
 </script>
 
@@ -87,19 +109,18 @@ const recent = [
         </RouterLink>
       </div>
       <div class="divide-y divide-gray-100 dark:divide-gray-800">
-        <div v-for="user in recent" :key="user.email" class="flex items-center gap-4 px-6 py-4">
-          <img :src="user.avatar" :alt="user.name" class="w-9 h-9 rounded-full shrink-0" />
+        <div v-for="user in people" :key="user.email" class="flex items-center gap-4 px-6 py-4">
+          <img :src="avatarUrl(user.name)" :alt="user.name" class="w-9 h-9 rounded-full shrink-0" />
           <div class="flex-1 min-w-0">
             <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ user.name }}</p>
             <p class="text-xs text-gray-500 truncate">{{ user.email }}</p>
           </div>
-          <span class="hidden sm:block text-xs text-gray-400 dark:text-gray-600">{{ user.joined }}</span>
           <span
             :class="[
               'text-xs px-2 py-1 rounded-full font-medium',
-              user.status === 'Active'
+              user.status === 'active'
                 ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-                : user.status === 'Inactive'
+                : user.status === 'inactive'
                   ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
                   : 'bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400',
             ]"
